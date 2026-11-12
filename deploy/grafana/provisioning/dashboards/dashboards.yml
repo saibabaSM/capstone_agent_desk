@@ -1,0 +1,3 @@
+apiVersion: 1
+providers:
+  - {name: analyst-desk, folder: Analyst Desk, type: file, options: {path: /var/lib/grafana/dashboards}}

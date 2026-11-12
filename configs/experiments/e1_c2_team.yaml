@@ -1,0 +1,3 @@
+name: e1_c2_team
+description: "E1 / C2: the team: research lead + parallel ReAct specialists + compliance critic (max 2 revisions)."
+orchestration: {mode: team}

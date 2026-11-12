@@ -1,0 +1,2 @@
+npm install
+hf download sentence-transformers/all-MiniLM-L6-v2

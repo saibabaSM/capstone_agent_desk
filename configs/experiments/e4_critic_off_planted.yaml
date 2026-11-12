@@ -1,0 +1,4 @@
+name: e4_critic_off_planted
+description: "E4a: critic loop OFF, with one wrong number planted in every first draft."
+critic: {enabled: false}
+demo: {plant_wrong_number: true}

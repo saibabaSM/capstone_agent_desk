@@ -1,0 +1,404 @@
+{
+ "uid": "analyst-desk",
+ "title": "Analyst Desk",
+ "schemaVersion": 39,
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "refresh": "30s",
+ "panels": [
+  {
+   "type": "stat",
+   "title": "Verified number share (latest note)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 6,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "agentdesk_verified_share",
+     "legendFormat": ""
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 0.98
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 1
+  },
+  {
+   "type": "timeseries",
+   "title": "Notes by outcome",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (outcome) (increase(agentdesk_notes_total[1h]))",
+     "legendFormat": "{{outcome}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 2
+  },
+  {
+   "type": "timeseries",
+   "title": "Cost per note (USD) p50 / p95",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 15,
+    "y": 0,
+    "w": 9,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le) (rate(agentdesk_note_cost_usd_bucket[1h])))",
+     "legendFormat": "p50"
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(agentdesk_note_cost_usd_bucket[1h])))",
+     "legendFormat": "p95"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "currencyUSD"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 3
+  },
+  {
+   "type": "timeseries",
+   "title": "Numbers verified vs not",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 5,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (verified) (increase(agentdesk_numbers_total[1h]))",
+     "legendFormat": "verified={{verified}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 4
+  },
+  {
+   "type": "timeseries",
+   "title": "Critic rejections (per hour)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 5,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "increase(agentdesk_critic_rejections_total[1h])",
+     "legendFormat": ""
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 5
+  },
+  {
+   "type": "timeseries",
+   "title": "Tokens per minute by role",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 5,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (role) (rate(agentdesk_tokens_total[5m])) * 60",
+     "legendFormat": "{{role}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 6
+  },
+  {
+   "type": "stat",
+   "title": "EDGAR cache hit rate",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 12,
+    "w": 6,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum(rate(agentdesk_edgar_cache_total{result='hit'}[1h])) / sum(rate(agentdesk_edgar_cache_total[1h]))",
+     "legendFormat": ""
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "percentunit",
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "red",
+        "value": null
+       },
+       {
+        "color": "green",
+        "value": 0.98
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 7
+  },
+  {
+   "type": "timeseries",
+   "title": "Latency: request to note (p50 / p95)",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 12,
+    "w": 9,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.5, sum by (le) (rate(agentdesk_run_latency_seconds_bucket[1h])))",
+     "legendFormat": "p50"
+    },
+    {
+     "refId": "B",
+     "expr": "histogram_quantile(0.95, sum by (le) (rate(agentdesk_run_latency_seconds_bucket[1h])))",
+     "legendFormat": "p95"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 8
+  },
+  {
+   "type": "timeseries",
+   "title": "MCP tool latency p95 by server",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 15,
+    "y": 12,
+    "w": 9,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "histogram_quantile(0.95, sum by (le, server) (rate(agentdesk_tool_latency_seconds_bucket[15m])))",
+     "legendFormat": "{{server}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 9
+  },
+  {
+   "type": "timeseries",
+   "title": "Guardrail blocks by kind",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 18,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (kind) (increase(agentdesk_guard_blocks_total[1h]))",
+     "legendFormat": "{{kind}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 10
+  },
+  {
+   "type": "timeseries",
+   "title": "Tool calls by status",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 18,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (status) (rate(agentdesk_tool_calls_total[5m])) * 60",
+     "legendFormat": "{{status}}"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 11
+  },
+  {
+   "type": "timeseries",
+   "title": "Approvals and replans",
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 18,
+    "w": 8,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (decision) (increase(agentdesk_approvals_total[1h]))",
+     "legendFormat": "{{decision}}"
+    },
+    {
+     "refId": "B",
+     "expr": "increase(agentdesk_replans_total[1h])",
+     "legendFormat": "replans"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "options": {},
+   "id": 12
+  }
+ ],
+ "tags": [
+  "capstone"
+ ]
+}

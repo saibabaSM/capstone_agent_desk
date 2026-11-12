@@ -1,0 +1,19 @@
+groups:
+  - name: analyst-desk
+    rules:
+      - alert: VerifiedNumberShareLow
+        # brief: alert when the verified share falls below 98%
+        expr: agentdesk_verified_share < 0.98
+        for: 1m
+        labels: {severity: page}
+        annotations:
+          summary: "Share of numbers verified against XBRL facts is {{ $value | humanizePercentage }} (< 98%)"
+          runbook: "Open the latest trace in data/traces/, look for critic 'mismatch'/'unattributed' issues; check for a model or config change."
+      - alert: CriticRejectionsSpike
+        expr: increase(agentdesk_critic_rejections_total[30m]) > 10
+        labels: {severity: ticket}
+        annotations: {summary: "More than 10 critic rejections in 30 minutes"}
+      - alert: CostPerNoteHigh
+        expr: histogram_quantile(0.95, sum by (le) (rate(agentdesk_note_cost_usd_bucket[1h]))) > 0.5
+        labels: {severity: ticket}
+        annotations: {summary: "p95 cost per note above $0.50"}

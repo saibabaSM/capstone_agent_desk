@@ -1,0 +1,4 @@
+name: e1_c0_fixed
+description: "E1 / C0: fixed workflow, no agent decisions. Rule planner, scripted tool calls, one writer LLM call, no critic loop."
+orchestration: {mode: fixed}
+critic: {enabled: false}

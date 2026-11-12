@@ -1,0 +1,4 @@
+name: e2_defences_off
+description: "E2: guardrails (input, output, quarantine, watchlist DLP) and the critic's wording checks OFF. Least-privilege permissions and the approval token cannot be switched off (they are structural)."
+guardrails: {enabled: false}
+critic: {enabled: false}

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyst Desk</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1d2330; --muted:#5f6b7a; --line:#dde2e8; --accent:#1f5fbf;
+          --ok:#1e7a46; --bad:#b3261e; --warn:#8a5a00; --code:#f0f2f5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14171c; --panel:#1c2027; --ink:#e6e9ee; --muted:#9aa4b2;
+          --line:#2c323c; --accent:#7aa7ff; --ok:#5cc28a; --bad:#ff8a80; --warn:#e0b04a; --code:#252a33; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header .sub { color:var(--muted); font-size:13px; }
+  header input { margin-left:auto; width:160px; }
+  main { display:grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); gap:16px; padding:16px 20px; max-width:1400px; margin:0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; min-width:0; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px; }
+  textarea, input { width:100%; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px; }
+  button { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--ink); padding:6px 12px; border-radius:6px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { color:var(--bad); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+  .log { font:12px/1.45 ui-monospace, Menlo, monospace; max-height:260px; overflow:auto; white-space:pre-wrap; }
+  .log .n { color:var(--accent); }
+  .pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; border:1px solid var(--line); }
+  .pass { color:var(--ok); } .fail { color:var(--bad); } .warn { color:var(--warn); }
+  .note { overflow-x:auto; }
+  .note table { border-collapse:collapse; font-size:13px; margin:8px 0; }
+  .note td, .note th { border:1px solid var(--line); padding:3px 8px; text-align:right; }
+  .note td:first-child, .note th:first-child { text-align:left; }
+  .note code { background:var(--code); padding:0 3px; border-radius:3px; font-size:12px; word-break:break-all; }
+  .note h3 { font-size:15px; margin:14px 0 4px; }
+  .ref { color:var(--accent); font-size:11px; }
+  ul.issues { margin:4px 0; padding-left:18px; }
+  .hidden { display:none !important; }
+  .muted { color:var(--muted); }
+  #planbox table { border-collapse:collapse; } #planbox td { padding:2px 8px 2px 0; vertical-align:top; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Analyst Desk</h1>
+  <span class="sub">research notes where every number traces to a filing</span>
+  <input id="token" placeholder="bearer token" value="dev-token" aria-label="Bearer token">
+</header>
+<main>
+  <div style="display:grid; gap:16px; align-content:start; min-width:0">
+    <section>
+      <h2>Request</h2>
+      <textarea id="q" rows="3">Compare Microsoft's and Alphabet's operating margins over the last three fiscal years, and tell me what changed in their risk factors.</textarea>
+      <div class="row"><button class="primary" id="run">Plan research</button><span id="status" class="muted"></span></div>
+    </section>
+    <section id="plansec" class="hidden">
+      <h2>Plan <span id="planver" class="pill"></span></h2>
+      <div id="planbox"></div>
+      <div class="row">
+        <button class="primary" id="planok">Approve plan</button>
+        <button id="planedit">Edit years</button>
+        <button class="danger" id="planno">Reject</button>
+      </div>
+      <textarea id="planjson" rows="5" class="hidden" aria-label="Edited years"></textarea>
+    </section>
+    <section id="notesec" class="hidden">
+      <h2>Note for approval <span id="hash" class="pill"></span></h2>
+      <div id="checks"></div>
+      <div id="note" class="note"></div>
+      <textarea id="noteedit" rows="16" class="hidden" aria-label="Edit note"></textarea>
+      <div class="row">
+        <button class="primary" id="approve">Approve &amp; publish this exact note</button>
+        <button id="edit">Edit</button>
+        <button id="saveedit" class="hidden">Submit edit (re-checks; old approval void)</button>
+        <button class="danger" id="reject">Reject</button>
+      </div>
+    </section>
+  </div>
+  <div style="display:grid; gap:16px; align-content:start; min-width:0">
+    <section><h2>Live trace</h2><div id="log" class="log"></div></section>
+    <section id="resultsec" class="hidden"><h2>Result</h2><div id="result"></div></section>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let thread = null, pending = null;
+
+function esc(s) { return String(s ?? "").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function md(src) {
+  const lines = String(src || "").split("\n"); let html = "", i = 0, inList = false;
+  const inline = t => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/\[(F\d+)\]/g, '<span class="ref">[$1]</span>');
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^\|/.test(l)) {
+      if (inList) { html += "</ul>"; inList = false; }
+      const rows = []; while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
+      html += "<table>" + rows.filter(r => !/^\|(\s*-+\s*\|)+\s*$/.test(r)).map((r, k) =>
+        "<tr>" + r.split("|").slice(1, -1).map(c => k ? `<td>${inline(c.trim())}</td>` : `<th>${inline(c.trim())}</th>`).join("") + "</tr>").join("") + "</table>";
+      continue;
+    }
+    if (/^#+\s/.test(l)) { if (inList) { html += "</ul>"; inList = false; } html += `<h3>${inline(l.replace(/^#+\s/, ""))}</h3>`; }
+    else if (/^\s*-\s/.test(l)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(l.replace(/^\s*-\s/, ""))}</li>`; }
+    else if (l.trim()) { if (inList) { html += "</ul>"; inList = false; } html += `<p>${inline(l)}</p>`; }
+    i++;
+  }
+  return html + (inList ? "</ul>" : "");
+}
+function log(node, text) {
+  const d = document.createElement("div");
+  d.innerHTML = `<span class="n">[${esc(node)}]</span> ${esc(text || "")}`;
+  $("log").appendChild(d); $("log").scrollTop = 1e9;
+}
+
+async function stream(url, body) {
+  $("status").textContent = "working…";
+  const resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + $("token").value }, body: JSON.stringify(body) });
+  if (!resp.ok) { $("status").textContent = `error ${resp.status}: ${await resp.text()}`; return; }
+  const reader = resp.body.getReader(), dec = new TextDecoder(); let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let k; while ((k = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, k); buf = buf.slice(k + 2);
+      const ev = (chunk.match(/^event: (.*)$/m) || [])[1], data = JSON.parse((chunk.match(/^data: (.*)$/m) || [])[1] || "{}");
+      handle(ev, data);
+    }
+  }
+}
+
+function handle(ev, d) {
+  if (d.thread_id) thread = d.thread_id;
+  if (ev === "update") {
+    let t = d.status ? `status=${d.status} ${d.message || ""}` : "";
+    if (d.critic) t = `critic round ${d.critic.round}: ${d.critic.passed ? "PASS" : "FAIL"} (numbers ${d.critic.numbers_verified}/${d.critic.numbers_counted}) ${(d.critic.issues || []).slice(0, 2).join(" | ")}`;
+    if (d.plan_reason && d.node === "replan") t = "REPLAN: " + d.plan_reason;
+    if (d.quant) t = d.quant.map(q => `${q.ticker}: ${q.fact_ids.length} facts${q.missing.length ? ", missing " + q.missing.length : ""}`).join("; ");
+    if (d.findings) t = d.findings.map(f => `${f.ticker}: ${f.findings.length} findings`).join("; ");
+    log(d.node, t);
+    if (d.status === "published" || d.status === "rejected" || d.status === "refused" || d.status === "plan_rejected") showResult(d);
+  } else if (ev === "interrupt") {
+    pending = d;
+    if (d.type === "plan_review") showPlan(d.plan); else showNote(d);
+    $("status").textContent = "waiting for your decision";
+  } else if (ev === "error") { log("error", d.error); $("status").textContent = "error"; }
+  else if (ev === "done") { if (!pending) $("status").textContent = `done in ${d.elapsed_s}s`; }
+}
+
+function showPlan(p) {
+  $("plansec").classList.remove("hidden"); $("planver").textContent = "v" + p.version;
+  $("planbox").innerHTML = `<p><b>Goal:</b> ${esc(p.goal)}</p><table>` +
+    p.years.map(y => `<tr><td>${esc(y.ticker)}</td><td>FY ${y.fiscal_years.join(", ")}</td></tr>`).join("") + `</table>` +
+    `<p><b>Metrics:</b> ${esc(p.metrics.join(", ") || "–")} · <b>Risk diff:</b> ${p.risk_diff} · <b>What changed since last note:</b> ${p.what_changed_since_last_note}</p>` +
+    `<ol>${p.sub_questions.map(q => `<li>${esc(q)}</li>`).join("")}</ol>` + (p.notes || []).map(n => `<p class="warn">${esc(n)}</p>`).join("");
+  $("planjson").value = JSON.stringify(p.years, null, 1);
+}
+
+function showNote(d) {
+  $("notesec").classList.remove("hidden"); $("hash").textContent = "sha256 " + d.note_hash.slice(0, 12);
+  const c = d.output_check;
+  $("checks").innerHTML = `<p class="${c.passed ? "pass" : "fail"}"><b>${c.passed ? "All output checks pass" : "Output checks FAILED: edit before approving"}</b>
+     · numbers verified ${c.verified}/${c.numbers} · critic rounds ${d.critic_rounds}</p>` +
+    (c.issues.length ? `<ul class="issues">${c.issues.map(i => `<li class="fail">${esc(i)}</li>`).join("")}</ul>` : "");
+  $("note").innerHTML = md(d.note); $("noteedit").value = d.note;
+  $("approve").disabled = !c.passed;
+}
+
+function showResult(d) {
+  $("resultsec").classList.remove("hidden"); pending = null;
+  $("result").innerHTML = `<p><b>${esc(d.status)}</b> ${esc(d.message || "")}</p>` +
+    (d.published && d.published.note_id ? `<p class="pass">Published as note #${d.published.note_id} (hash ${esc((d.published.note_hash || "").slice(0, 12))})</p>` : "");
+}
+
+$("run").onclick = () => { thread = null; pending = null; $("log").innerHTML = ""; ["plansec", "notesec", "resultsec"].forEach(id => $(id).classList.add("hidden"));
+  stream("/api/runs", { question: $("q").value }); };
+$("planok").onclick = () => { $("plansec").classList.add("hidden"); pending = null; stream(`/api/runs/${thread}/resume`, { action: "approve" }); };
+$("planno").onclick = () => { $("plansec").classList.add("hidden"); pending = null; stream(`/api/runs/${thread}/resume`, { action: "reject" }); };
+$("planedit").onclick = () => {
+  const box = $("planjson");
+  if (box.classList.contains("hidden")) { box.classList.remove("hidden"); $("planedit").textContent = "Submit edited years"; return; }
+  let years; try { years = JSON.parse(box.value); } catch (e) { $("status").textContent = "years must be JSON"; return; }
+  $("plansec").classList.add("hidden"); box.classList.add("hidden"); $("planedit").textContent = "Edit years"; pending = null;
+  stream(`/api/runs/${thread}/resume`, { action: "edit", plan: { years } });
+};
+$("approve").onclick = () => { $("notesec").classList.add("hidden"); const h = pending.note_hash; pending = null;
+  stream(`/api/runs/${thread}/resume`, { action: "approve", note_hash: h }); };
+$("reject").onclick = () => { $("notesec").classList.add("hidden"); pending = null; stream(`/api/runs/${thread}/resume`, { action: "reject", reason: "rejected in UI" }); };
+$("edit").onclick = () => { $("noteedit").classList.remove("hidden"); $("note").classList.add("hidden"); $("saveedit").classList.remove("hidden"); $("approve").disabled = true; };
+$("saveedit").onclick = () => { $("noteedit").classList.add("hidden"); $("note").classList.remove("hidden"); $("saveedit").classList.add("hidden");
+  $("notesec").classList.add("hidden"); pending = null; stream(`/api/runs/${thread}/resume`, { action: "edit", edited_note: $("noteedit").value }); };
+</script>
+</body>
+</html>

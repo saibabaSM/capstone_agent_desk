@@ -1,0 +1,23 @@
+# Gold concept per company and metric, chosen BY HAND by the evaluation owner from each company's
+# income statement / cash-flow statement tags (checked against the 10-K face statements).
+# The gold builder reads values for these concepts from SEC's companyconcept endpoint, a different
+# endpoint and code path from the agent's (companyfacts + finance/metrics.py).
+revenue:
+  MSFT: RevenueFromContractWithCustomerExcludingAssessedTax
+  GOOGL: Revenues
+  AAPL: RevenueFromContractWithCustomerExcludingAssessedTax
+  META: RevenueFromContractWithCustomerExcludingAssessedTax
+  ORCL: Revenues
+  ADBE: Revenues
+  NVDA: Revenues
+  AMD: RevenueFromContractWithCustomerExcludingAssessedTax
+  INTC: RevenueFromContractWithCustomerExcludingAssessedTax
+  QCOM: Revenues
+  TXN: RevenueFromContractWithCustomerExcludingAssessedTax
+  AVGO: RevenueFromContractWithCustomerExcludingAssessedTax
+operating_income: {default: OperatingIncomeLoss}
+net_income: {default: NetIncomeLoss, AVGO: NetIncomeLossAvailableToCommonStockholdersBasic}
+gross_profit: {default: GrossProfit}
+rd_expense: {default: ResearchAndDevelopmentExpense}
+operating_cash_flow: {default: NetCashProvidedByUsedInOperatingActivities}
+capex: {default: PaymentsToAcquirePropertyPlantAndEquipment, NVDA: PaymentsToAcquireProductiveAssets, QCOM: PaymentsToAcquireProductiveAssets}

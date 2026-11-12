@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Test and build artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Local data
+/data/*
+!/data/.gitkeep
+
+# Analyst Desk run outputs (keep reports and the frozen playbook; raw results are regenerated)
+eval/results/*
+!eval/results/.gitkeep
+*.db
+.DS_Store

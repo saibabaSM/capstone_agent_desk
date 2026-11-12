@@ -1,0 +1,3 @@
+name: ci_offline
+description: "CI gate: deterministic offline mode (no API key needed); exercises tools, numbers, critic, guards, approval."
+llm: {mode: offline}

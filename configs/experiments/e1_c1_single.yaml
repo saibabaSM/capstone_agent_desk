@@ -1,0 +1,3 @@
+name: e1_c1_single
+description: "E1 / C1: one ReAct agent with all read tools (same model as the specialists, same token budget). No critic loop."
+orchestration: {mode: single}

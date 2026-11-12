@@ -1,0 +1,25 @@
+name: local_ollama
+description: >
+  Live agents WITHOUT an API key: models served locally by Ollama (OpenAI-compatible API on
+  localhost:11434). Sized for an 8 GB Apple-silicon laptop. Small local models are much weaker than
+  the brief's gpt-4.1-mini, so treat results as a functional live run, not as the reported numbers.
+  The judge is a different model family (Llama) from the agents (Qwen), as the brief requires.
+  Setup:  ollama pull qwen2.5:3b && ollama pull llama3.2:3b
+llm:
+  mode: live
+  base_url: http://localhost:11434/v1
+  request_timeout_s: 300
+  max_retries: 1
+  models:
+    lead: qwen2.5:3b
+    specialist: qwen2.5:3b
+    writer: qwen2.5:3b
+    single_agent: qwen2.5:3b
+    reflection: qwen2.5:3b
+    judge: llama3.2:3b
+    guard: llama3.2:3b
+  prices_per_million:
+    qwen2.5:3b: {in: 0, out: 0}
+    llama3.2:3b: {in: 0, out: 0}
+budgets:
+  react_max_steps: 6        # small models loop more; keep runs short on a laptop

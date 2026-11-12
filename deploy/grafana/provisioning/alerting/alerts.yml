@@ -1,0 +1,24 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: analyst-desk
+    folder: Analyst Desk
+    interval: 1m
+    rules:
+      - uid: verified-share-low
+        title: Verified number share below 98%
+        condition: C
+        for: 1m
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: prometheus
+            model: {expr: "agentdesk_verified_share", refId: A}
+          - refId: B
+            datasourceUid: __expr__
+            model: {type: reduce, expression: A, reducer: last, refId: B}
+          - refId: C
+            datasourceUid: __expr__
+            model: {type: threshold, expression: B, refId: C, conditions: [{evaluator: {type: lt, params: [0.98]}}]}
+        annotations: {summary: "Numbers in the latest note are not all verified against XBRL facts"}
+        labels: {severity: page}

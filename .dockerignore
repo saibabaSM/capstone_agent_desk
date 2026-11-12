@@ -1,0 +1,8 @@
+.venv
+.env
+data
+eval
+.git
+**/__pycache__
+documents
+*.pdf

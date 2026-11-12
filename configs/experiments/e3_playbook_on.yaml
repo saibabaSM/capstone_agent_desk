@@ -1,0 +1,3 @@
+name: e3_playbook_on
+description: "E3: retrieve reviewed, frozen Reflexion lessons (eval/playbook/frozen.json)."
+improvement: {playbook_enabled: true}
